@@ -1,0 +1,16 @@
+{
+  "buildCommand": "prisma migrate deploy && prisma generate && next build",
+  "framework": "nextjs",
+  "env": {
+    "DATABASE_URL": "postgresql://neondb_owner:npg_e1rlbnEoDLA7@ep-raspy-cloud-azjlesj3.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require",
+    "NEXT_PUBLIC_APP_URL": "https://devbridge.vercel.app",
+    "NEXTAUTH_URL": "https://devbridge.vercel.app",
+    "NEXTAUTH_SECRET": "devbridge_secure_jwt_auth_secret_2026",
+    "ADMIN_EMAIL": "kawinnath08@gmail.com",
+    "NEXT_PUBLIC_ADMIN_EMAIL": "kawinnath08@gmail.com",
+    "RAZORPAY_KEY_ID": "rzp_test_devbridge2026",
+    "RAZORPAY_KEY_SECRET": "devbridge_rzp_secret_key_2026",
+    "NEXT_PUBLIC_RAZORPAY_KEY_ID": "rzp_test_devbridge2026",
+    "RAZORPAY_WEBHOOK_SECRET": "devbridge_webhook_secret_2026"
+  }
+}

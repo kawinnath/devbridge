@@ -1,0 +1,244 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                  String         @id @default(uuid())
+  email               String         @unique
+  name                String
+  fullName            String         @default("")
+  role                String         // "CLIENT", "DEVELOPER", "AGENCY", "ADMIN"
+  password            String         @default("")
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @default(now()) @updatedAt
+  isVerified          Boolean        @default(false)
+  isActive            Boolean        @default(true)
+  trustScore          Float          @default(80.0)
+  verificationBadge   Boolean        @default(false)
+  gstNumber           String?
+  businessReg         String?
+  companyBranding     String?        // JSON string for branding customizations
+  monthlyContactCount Int            @default(0)
+  lastContactReset    DateTime?
+  hasUsedIntroOffer   Boolean        @default(false)
+  otpCode             String?        // 6-digit OTP for email verification
+  otpExpiry           DateTime?      // OTP expiry time
+  profileCompleted    Boolean        @default(false)
+
+  profile             Profile?
+  projects            Project[]      @relation("ClientProjects")
+  assignedProjects    Project[]      @relation("DeveloperProjects")
+  proposals           Proposal[]     @relation("DeveloperProposals")
+  sentMessages        Message[]      @relation("SentMessages")
+  receivedMessages    Message[]      @relation("ReceivedMessages")
+  reviewsGiven        Review[]       @relation("ReviewsGiven")
+  reviewsReceived     Review[]       @relation("ReviewsReceived")
+  payments            Payment[]
+  subscriptions       Subscription[]
+  notifications       Notification[]
+  invoices            Invoice[]
+}
+
+model Profile {
+  id                    String    @id @default(uuid())
+  userId                String    @unique
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title                 String?
+  bio                   String?
+  skills                String    // comma-separated list of skills
+  hourlyRate            Float?
+  availability          String?   // "Full Time", "Part Time", "Not Available"
+  location              String?
+  languages             String?
+  github                String?
+  linkedin              String?
+  portfolio             String?   // JSON string for portfolio links
+  avatar                String?
+  banner                String?
+  experience            String?   // JSON string for work history
+  education             String?   // JSON string for educational history
+  certifications        String?   // JSON string for certificates
+  aiSkillScore          String?   // JSON string of ratings: {"React": 96, "NodeJS": 90}
+  resumeUrl             String?   // Base64 or URL for resume document (PDF, DOC, DOCX)
+  resumeFileName        String?   // Resume original file name
+  socialLinks           String?   // JSON string of professional links
+  subscription          String    @default("BASIC") // "BASIC", "PRO", "ENTERPRISE"
+  subscriptionStartDate DateTime?
+  subscriptionEndDate   DateTime?
+  teamMembers           String?   // JSON string for Agency team members
+  companyName           String?
+  companyDescription    String?
+  industry              String?
+  phone                 String?
+  companyWebsite        String?
+}
+
+model Project {
+  id                 String     @id @default(uuid())
+  title              String
+  description        String
+  category           String
+  skills             String     // comma-separated skills
+  budget             Float
+  deadline           String
+  status             String     @default("OPEN") // "OPEN", "IN_PROGRESS", "COMPLETED", "CANCELLED"
+  priority           String     @default("MEDIUM") // "LOW", "MEDIUM", "HIGH", "URGENT"
+  progress           Int        @default(0) // 0-100 percentage
+  advancePaid        Float      @default(0)
+  remainingBalance   Float      @default(0)
+  acceptedAmount     Float      @default(0)
+  clientId           String
+  client             User       @relation("ClientProjects", fields: [clientId], references: [id], onDelete: Cascade)
+  developerId        String?
+  developer          User?      @relation("DeveloperProjects", fields: [developerId], references: [id], onDelete: SetNull)
+  proposals          Proposal[]
+  reviews            Review[]
+  tasks              Task[]
+  messages           Message[]  @relation("ProjectMessages")
+  createdAt          DateTime   @default(now())
+  isFeatured         Boolean    @default(false)
+  aiScamFlagged      Boolean    @default(false)
+  aiScamReason       String?
+  aiDuplicateFlagged Boolean    @default(false)
+}
+
+model Proposal {
+  id              String   @id @default(uuid())
+  projectId       String
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  developerId     String
+  developer       User     @relation("DeveloperProposals", fields: [developerId], references: [id], onDelete: Cascade)
+  coverLetter     String
+  bidAmount       Float
+  matchPercentage Int
+  trustScore      Float
+  status          String   @default("PENDING") // "PENDING", "SHORTLISTED", "HIRED", "REJECTED"
+  createdAt       DateTime @default(now())
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  senderId   String
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  projectId  String?
+  project    Project? @relation("ProjectMessages", fields: [projectId], references: [id], onDelete: SetNull)
+  content    String
+  timestamp  DateTime @default(now())
+  isRead     Boolean  @default(false)
+  fileUrl    String?
+  fileName   String?
+  voiceUrl   String?
+}
+
+model Review {
+  id          String   @id @default(uuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  reviewerId  String
+  reviewer    User     @relation("ReviewsGiven", fields: [reviewerId], references: [id], onDelete: Cascade)
+  revieweeId  String
+  reviewee    User     @relation("ReviewsReceived", fields: [revieweeId], references: [id], onDelete: Cascade)
+  rating      Float
+  comment     String
+  createdAt   DateTime @default(now())
+}
+
+model Payment {
+  id                  String        @id @default(uuid())
+  userId              String
+  user                User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan                String        // "PRO", "ENTERPRISE"
+  amount              Float
+  currency            String        @default("INR")
+  transactionId       String        @unique
+  screenshot          String?       // Base64 string or file URL for payment proof
+  razorpayPaymentId   String?
+  razorpayOrderId     String?
+  razorpaySignature   String?
+  subscriptionId      String?
+  subscription        Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  invoiceId           String?
+  status              String        @default("PENDING") // "PENDING", "SUCCESS", "FAILED", "APPROVED", "REJECTED"
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  invoice             Invoice?
+}
+
+model Subscription {
+  id                      String    @id @default(uuid())
+  userId                  String
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan                    String    @default("FREE") // "FREE", "PRO"
+  status                  String    @default("CREATED") // "CREATED", "AUTHENTICATED", "ACTIVE", "PENDING", "HALTED", "CANCELLED", "EXPIRED"
+  razorpaySubscriptionId  String?   @unique
+  razorpayPlanId          String?
+  currentPeriodStart      DateTime?
+  currentPeriodEnd        DateTime?
+  cancelledAt             DateTime?
+  payments                Payment[]
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+}
+
+model Task {
+  id           String   @id @default(uuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name         String
+  description  String   @default("")
+  assignedDate DateTime @default(now())
+  deadline     DateTime?
+  status       String   @default("PENDING") // "PENDING", "IN_PROGRESS", "UNDER_REVIEW", "COMPLETED"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   @default("INFO") // "INFO", "SUCCESS", "WARNING", "PAYMENT", "PROJECT"
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Invoice {
+  id                 String   @id @default(uuid())
+  paymentId          String   @unique
+  payment            Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invoiceNumber      String   @unique
+  amount             Float
+  currency           String   @default("INR")
+  plan               String
+  billingPeriodStart DateTime?
+  billingPeriodEnd   DateTime?
+  createdAt          DateTime @default(now())
+}
+
+model Admin {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("ADMIN")
+  createdAt DateTime @default(now())
+}
+
+model SupportRequest {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  subject   String
+  message   String
+  createdAt DateTime @default(now())
+}
